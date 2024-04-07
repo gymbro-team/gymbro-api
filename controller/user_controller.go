@@ -6,6 +6,9 @@ import (
 	"gymbro-api/repository"
 	"log"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type UserController struct {
@@ -37,15 +40,44 @@ func (uc *UserController) CreateUserHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (uc *UserController) GetUserHandler(w http.ResponseWriter, r *http.Request) {
-	// Add gorilla/mux to handle here
-	var id int64 = 1
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	//cast id to int64
+	id, err := strconv.ParseInt(idStr, 10, 64)
+
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
 
 	user, err := uc.userRepo.GetUserByID(id)
 
 	if err != nil {
+		if err == repository.ErrUserNotFound {
+			http.Error(w, "User not found", http.StatusNotFound)
+			return
+		}
+
 		http.Error(w, "Failed to get user", http.StatusInternalServerError)
 		return
 	}
 
 	json.NewEncoder(w).Encode(user)
+}
+
+func (uc *UserController) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
+	users, err := uc.userRepo.GetUsers()
+
+	if len(users) == 0 {
+		http.Error(w, "No users found", http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		http.Error(w, "Failed to get users", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(users)
 }
