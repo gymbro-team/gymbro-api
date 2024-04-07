@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 )
 
@@ -33,7 +34,7 @@ func main() {
 	userHandler := handler.NewUserHandler(userController)
 
 	// Create a ServeMux (router)
-	mux := http.NewServeMux()
+	mux := mux.NewRouter()
 
 	// Register user-related routes
 	userHandler.RegisterRoutes(mux)
