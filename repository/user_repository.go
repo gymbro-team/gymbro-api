@@ -46,6 +46,7 @@ func (ur *UserRepository) GetUserByID(id int64) (*model.User, error) {
 			  ,u.updated_at
 		 from gymbro.users u 
 		where u.id = $1::bigint
+		  and u.status = 'A'
 	`, id)
 
 	user := &model.User{}
@@ -69,6 +70,7 @@ func (ur *UserRepository) GetUsers() ([]model.User, error) {
 	          ,u.created_at
 			  ,u.updated_at
 		 from gymbro.users u
+		where u.status = 'A'
 	`)
 
 	if err != nil {
@@ -88,4 +90,37 @@ func (ur *UserRepository) GetUsers() ([]model.User, error) {
 	}
 
 	return users, nil
+}
+
+func (ur *UserRepository) UpdateUser(user *model.User) error {
+	_, err := ur.db.Exec(`
+		update gymbro.users
+		   set type       = $1
+		      ,username   = $2
+			  ,name       = $3
+			  ,email      = $4
+			  ,updated_at = now()
+		 where id         = $5
+	`, user.Type, user.Username, user.Name, user.Email, user.ID)
+
+	if err == sql.ErrNoRows {
+		return ErrUserNotFound
+	}
+
+	return err
+}
+
+func (ur *UserRepository) DeleteUser(id int64) error {
+	_, err := ur.db.Exec(`
+		update gymbro.users
+		   set status     = 'D'
+		      ,deleted_at = now()
+		 where id         = $1
+	`, id)
+
+	if err == sql.ErrNoRows {
+		return ErrUserNotFound
+	}
+
+	return err
 }
