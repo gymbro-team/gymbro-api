@@ -81,3 +81,68 @@ func (uc *UserController) GetUsersHandler(w http.ResponseWriter, r *http.Request
 
 	json.NewEncoder(w).Encode(users)
 }
+
+func (uc *UserController) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	//cast id to int64
+	id, err := strconv.ParseInt(idStr, 10, 64)
+
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	var user model.User
+
+	err = json.NewDecoder(r.Body).Decode(&user)
+
+	if err != nil {
+		http.Error(w, "Failed to decode request body, verify your data type and fields", http.StatusBadRequest)
+		return
+	}
+
+	user.ID = id
+
+	err = uc.userRepo.UpdateUser(&user)
+
+	if err != nil {
+		if err == repository.ErrUserNotFound {
+			http.Error(w, "User not found", http.StatusNotFound)
+			return
+		}
+
+		http.Error(w, "Failed to update user", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (uc *UserController) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	//cast id to int64
+	id, err := strconv.ParseInt(idStr, 10, 64)
+
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	err = uc.userRepo.DeleteUser(id)
+
+	if err != nil {
+		if err == repository.ErrUserNotFound {
+			http.Error(w, "User not found", http.StatusNotFound)
+			return
+		}
+
+		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
