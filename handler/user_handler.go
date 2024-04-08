@@ -15,9 +15,9 @@ func NewUserHandler(userController *controller.UserController) *UserHandler {
 }
 
 func (uh *UserHandler) RegisterRoutes(mux *mux.Router) {
-	// Define routes for user CRUD operations
 	mux.HandleFunc("/users", uh.userController.CreateUserHandler).Methods("POST")
 	mux.HandleFunc("/users", uh.userController.GetUsersHandler).Methods("GET")
 	mux.HandleFunc("/users/{id}", uh.userController.GetUserHandler).Methods("GET")
-
+	mux.HandleFunc("/users/{id}", uh.userController.UpdateUserHandler).Methods("PUT")
+	mux.HandleFunc("/users/{id}", uh.userController.DeleteUserHandler).Methods("DELETE")
 }
