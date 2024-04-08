@@ -8,8 +8,10 @@ create table gymbro.users
   name       text                     not null,
   email      varchar(50) unique       not null,
   password   varchar(50)              not null,
+  status     bpchar(1)                not null default 'A' check ( status in ('A','I','D') ),
   created_at timestamp with time zone not null default current_timestamp,
-  updated_at timestamp with time zone not null default current_timestamp
+  updated_at timestamp with time zone not null default current_timestamp,
+  deleted_at timestamp with time zone
 );
 
 comment on column gymbro.users.type is 'A: Athlete, N: Nutritionist, P: Personal';
