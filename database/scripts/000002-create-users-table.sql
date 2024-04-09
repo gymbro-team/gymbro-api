@@ -15,3 +15,4 @@ create table gymbro.users
 );
 
 comment on column gymbro.users.type is 'A: Athlete, N: Nutritionist, P: Personal';
+comment on column gymbro.users.status is 'A: Active, I: Inactive, D: Deleted';
