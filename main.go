@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"gymbro-api/auth"
 	"gymbro-api/config"
 	"gymbro-api/controller"
 	"gymbro-api/handler"
@@ -27,8 +28,11 @@ func main() {
 	userHandler := handler.NewUserHandler(userController)
 
 	mux := mux.NewRouter()
+	v1 := mux.PathPrefix("/v1").Subrouter()
 
-	userHandler.RegisterRoutes(mux)
+	v1.Use(auth.AuthecationMiddleware)
+
+	userHandler.RegisterRoutes(v1)
 
 	addr := cfg.ServerAddress
 	log.Printf("Server listening on %s", addr)
