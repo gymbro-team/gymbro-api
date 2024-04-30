@@ -44,7 +44,7 @@ func (uc *UserController) GetUserHandler(w http.ResponseWriter, r *http.Request)
 	idStr := vars["id"]
 
 	//cast id to int64
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseUint(idStr, 10, 64)
 
 	if err != nil {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
@@ -87,7 +87,7 @@ func (uc *UserController) UpdateUserHandler(w http.ResponseWriter, r *http.Reque
 	idStr := vars["id"]
 
 	//cast id to int64
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseUint(idStr, 10, 64)
 
 	if err != nil {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
@@ -125,7 +125,7 @@ func (uc *UserController) DeleteUserHandler(w http.ResponseWriter, r *http.Reque
 	idStr := vars["id"]
 
 	//cast id to int64
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseUint(idStr, 10, 64)
 
 	if err != nil {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)

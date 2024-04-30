@@ -35,7 +35,7 @@ func (ur *UserRepository) CreateUser(user *model.User) error {
 	return err
 }
 
-func (ur *UserRepository) GetUserByID(id int64) (*model.User, error) {
+func (ur *UserRepository) GetUserByID(id uint64) (*model.User, error) {
 	row := ur.db.QueryRow(`
 		select u.id
 		      ,u.username
@@ -110,7 +110,7 @@ func (ur *UserRepository) UpdateUser(user *model.User) error {
 	return err
 }
 
-func (ur *UserRepository) DeleteUser(id int64) error {
+func (ur *UserRepository) DeleteUser(id uint64) error {
 	_, err := ur.db.Exec(`
 		update gymbro.users
 		   set status     = 'D'

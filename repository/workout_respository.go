@@ -10,7 +10,7 @@ type WorkoutRepository struct {
 	db *sql.DB
 }
 
-var ErrWorkoutNotFound = errors.New("Workout not found")
+var ErrWorkoutNotFound = errors.New("workout not found")
 
 func (wr *WorkoutRepository) CreateWorkout(workout *model.Workout) error {
 	_, err := wr.db.Exec(`
@@ -47,7 +47,7 @@ func (wr *WorkoutRepository) CreateWorkout(workout *model.Workout) error {
 	return err
 }
 
-func (wr *WorkoutRepository) GetWorkoutByID(id int64) (*model.Workout, error) {
+func (wr *WorkoutRepository) GetWorkoutByID(id uint64) (*model.Workout, error) {
 	row := wr.db.QueryRow(`
 		select w.id
 		      ,w.athlete_id
