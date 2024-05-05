@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"gymbro-api/auth"
 	"gymbro-api/config"
 	"gymbro-api/controller"
 	"gymbro-api/handler"
@@ -14,6 +13,32 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type App struct {
+	Router *mux.Router
+}
+
+func NewApp(db *sql.DB) *App {
+	app := &App{
+		Router: mux.NewRouter(),
+	}
+
+	v1 := app.Router.PathPrefix("/v1").Subrouter()
+
+	public := v1.PathPrefix("/public").Subrouter()
+
+	userRepo := repository.NewUserRepository(db)
+	userController := controller.NewUserController(userRepo)
+	userHandler := handler.NewUserHandler(userController)
+	userHandler.RegisterRoutes(v1)
+
+	sessionRepo := repository.NewSessionRepository(db)
+	sessionController := controller.NewSessionController(sessionRepo)
+	sessionHandler := handler.NewSessionHandler(sessionController)
+	sessionHandler.RegisterRoutes(public)
+
+	return app
+}
+
 func main() {
 	cfg := config.LoadConfig()
 
@@ -23,20 +48,11 @@ func main() {
 	}
 	defer db.Close()
 
-	userRepo := repository.NewUserRepository(db)
-	userController := controller.NewUserController(userRepo)
-	userHandler := handler.NewUserHandler(userController)
-
-	mux := mux.NewRouter()
-	v1 := mux.PathPrefix("/v1").Subrouter()
-
-	v1.Use(auth.AuthecationMiddleware)
-
-	userHandler.RegisterRoutes(v1)
+	app := NewApp(db)
 
 	addr := cfg.ServerAddress
 	log.Printf("Server listening on %s", addr)
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	if err := http.ListenAndServe(addr, app.Router); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
