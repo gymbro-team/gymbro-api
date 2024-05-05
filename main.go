@@ -1,9 +1,9 @@
 package main
 
 import (
-	"database/sql"
 	"gymbro-api/config"
 	"gymbro-api/controller"
+	"gymbro-api/core"
 	"gymbro-api/handler"
 	"gymbro-api/repository"
 	"log"
@@ -17,7 +17,9 @@ type App struct {
 	Router *mux.Router
 }
 
-func NewApp(db *sql.DB) *App {
+func NewApp(cfg *config.Config) *App {
+	core.InitializeDatabase("user=" + cfg.Database.User + " password=" + cfg.Database.Password + " dbname=" + cfg.Database.Name + " sslmode=disable")
+
 	app := &App{
 		Router: mux.NewRouter(),
 	}
@@ -26,15 +28,20 @@ func NewApp(db *sql.DB) *App {
 
 	public := v1.PathPrefix("/public").Subrouter()
 
-	userRepo := repository.NewUserRepository(db)
+	userRepo := repository.NewUserRepository(core.GetDB())
 	userController := controller.NewUserController(userRepo)
 	userHandler := handler.NewUserHandler(userController)
 	userHandler.RegisterRoutes(v1)
 
-	sessionRepo := repository.NewSessionRepository(db)
+	sessionRepo := repository.NewSessionRepository(core.GetDB())
 	sessionController := controller.NewSessionController(sessionRepo)
 	sessionHandler := handler.NewSessionHandler(sessionController)
 	sessionHandler.RegisterRoutes(public)
+
+	workoutRepo := repository.NewWorkoutRepository(core.GetDB())
+	workoutController := controller.NewWorkoutController(workoutRepo)
+	workoutHandler := handler.NewWorkoutHandler(workoutController)
+	workoutHandler.RegisterRoutes(v1)
 
 	return app
 }
@@ -42,15 +49,10 @@ func NewApp(db *sql.DB) *App {
 func main() {
 	cfg := config.LoadConfig()
 
-	db, err := sql.Open("postgres", "user="+cfg.Database.User+" password="+cfg.Database.Password+" dbname="+cfg.Database.Name+" sslmode=disable")
-	if err != nil {
-		log.Fatalf("Failed to connect to the database: %v", err)
-	}
-	defer db.Close()
-
-	app := NewApp(db)
+	app := NewApp(cfg)
 
 	addr := cfg.ServerAddress
+
 	log.Printf("Server listening on %s", addr)
 	if err := http.ListenAndServe(addr, app.Router); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
