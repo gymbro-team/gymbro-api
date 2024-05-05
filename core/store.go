@@ -6,27 +6,26 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type DataStore struct {
+type Database struct {
 	db *sql.DB
 }
 
-var _store *DataStore
+var db *Database
 
-func InitializeStore(uri string) error {
-	db, err := sql.Open("postgres", uri)
+func InitializeDatabase(dataSourceName string) {
+	database, err := sql.Open("postgres", dataSourceName)
+
 	if err != nil {
-		return err
+		panic(err)
 	}
 
-	_store = &DataStore{db}
-
-	return nil
+	db = &Database{database}
 }
 
-func DisconnectStore() error {
-	return _store.db.Close()
+func GetDB() *sql.DB {
+	return db.db
 }
 
-func GetStore() *DataStore {
-	return _store
+func CloseDB() {
+	db.db.Close()
 }
