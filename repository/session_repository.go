@@ -63,7 +63,7 @@ func (sr *SessionRepository) Login(login *model.Login) (*model.Session, error) {
 		select u.id
 		  from gymbro.users u
 		 where u.username = $1::text
-		   and u.password = $2::text
+		   and u.password = crypt($2::text, u.password)
 		   and u.status = 'A'
 	`, login.Username, login.Password)
 
