@@ -16,3 +16,21 @@ create table gymbro.users
 
 comment on column gymbro.users.type is 'A: Athlete, N: Nutritionist, P: Personal';
 comment on column gymbro.users.status is 'A: Active, I: Inactive, D: Deleted';
+
+create or replace function fnc_trg_users_biu_er() returns trigger as $$
+begin
+  --
+  if (new.password != old.password) then
+    --
+    new.password := crypt(new.password, gen_salt('bf'));
+    --
+  end if;
+  --
+  return new;
+  --
+end;
+$$ language plpgsql;
+
+create trigger trg_users_biu_er
+  before insert or update on gymbro.users
+  for each row execute function fnc_trg_users_biu_er();
