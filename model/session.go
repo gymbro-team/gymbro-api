@@ -10,7 +10,7 @@ type Session struct {
 	Token     string    `json:"token"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	ExpiredAt time.Time `json:"expired_at"`
+	ExpiresAt time.Time `json:"expires_at"`
 	Status    string    `json:"status"`
 }
 
