@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"gymbro-api/model"
 	"gymbro-api/repository"
 	"net/http"
@@ -28,6 +29,7 @@ func (sc *SessionController) Login(w http.ResponseWriter, r *http.Request) {
 	session, err := sc.sessionRepo.Login(&login)
 
 	if err != nil {
+		fmt.Print(err)
 		http.Error(w, "Failed to login", http.StatusInternalServerError)
 		return
 	}

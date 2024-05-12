@@ -15,6 +15,7 @@ type SessionRepository struct {
 var ErrSessionNotFound = errors.New("session not found")
 var ErrSessionExpired = errors.New("session expired")
 var ErrSessionInactive = errors.New("session manually inactivated")
+var ErrInvalidPassword = errors.New("invalid password")
 
 func NewSessionRepository(db *sql.DB) *SessionRepository {
 	return &SessionRepository{db}
@@ -28,7 +29,7 @@ func (sr *SessionRepository) ValidateSession(token string) (*model.Session, erro
 			  ,s.created_at
 			  ,s.updated_at
 			  ,s.status
-			  ,s.expired_at
+			  ,s.expires_at
 		 from gymbro.sessions s 
 		where s.token = $1::text
 	`, token)
@@ -47,7 +48,7 @@ func (sr *SessionRepository) ValidateSession(token string) (*model.Session, erro
 
 	now := time.Now()
 
-	if session.ExpiredAt.Before(now) {
+	if session.ExpiresAt.Before(now) {
 		return nil, ErrSessionExpired
 	}
 
@@ -61,22 +62,27 @@ func (sr *SessionRepository) ValidateSession(token string) (*model.Session, erro
 func (sr *SessionRepository) Login(login *model.Login) (*model.Session, error) {
 	row := sr.db.QueryRow(`
 		select u.id
+		      ,case when crypt($2::text, u.password) = u.password then true else false end as password_match
 		  from gymbro.users u
 		 where u.username = $1::text
-		   and u.password = crypt($2::text, u.password)
 		   and u.status = 'A'
 	`, login.Username, login.Password)
 
 	var userID uint64
+	var passwordMatch bool
 
-	err := row.Scan(&userID)
+	err := row.Scan(&userID, &passwordMatch)
 
 	if err == sql.ErrNoRows {
-		return nil, ErrSessionNotFound
+		return nil, ErrUserNotFound
 	}
 
 	if err != nil {
 		return nil, err
+	}
+
+	if !passwordMatch {
+		return nil, ErrInvalidPassword
 	}
 
 	row = sr.db.QueryRow(`
@@ -86,16 +92,16 @@ func (sr *SessionRepository) Login(login *model.Login) (*model.Session, error) {
 			  ,s.created_at
 			  ,s.updated_at
 			  ,s.status
-			  ,s.expired_at
+			  ,s.expires_at
 		  from gymbro.sessions s
 		 where s.user_id = $1::bigint
 		   and s.status = 'A'
-		   and s.expired_at > current_timestamp
+		   and s.expires_at > current_timestamp
 	`, userID)
 
 	session := &model.Session{}
 
-	err = row.Scan(&session.ID, &session.UserID, &session.Token, &session.CreatedAt, &session.UpdatedAt, &session.Status, &session.ExpiredAt)
+	err = row.Scan(&session.ID, &session.UserID, &session.Token, &session.CreatedAt, &session.UpdatedAt, &session.Status, &session.ExpiresAt)
 
 	if err == sql.ErrNoRows {
 		token, err := auth.GenerateToken(userID)
@@ -109,7 +115,7 @@ func (sr *SessionRepository) Login(login *model.Login) (*model.Session, error) {
 		session.CreatedAt = time.Now()
 		session.UpdatedAt = time.Now()
 		session.Status = "A"
-		session.ExpiredAt = time.Now().Add(time.Hour * 24)
+		session.ExpiresAt = time.Now().Add(time.Hour * 24)
 
 		_, err = sr.db.Exec(`
 			insert into gymbro.sessions(id
@@ -118,7 +124,7 @@ func (sr *SessionRepository) Login(login *model.Login) (*model.Session, error) {
 									   ,created_at
 									   ,updated_at
 									   ,status
-									   ,expired_at)
+									   ,expires_at)
 								values (nextval('gymbro.seq_sessions')
 									   ,$1::bigint
 									   ,$2::text
@@ -126,7 +132,7 @@ func (sr *SessionRepository) Login(login *model.Login) (*model.Session, error) {
 									   ,$4::timestamp
 									   ,$5::bpchar
 									   ,$6::timestamp)
-		`, session.UserID, session.Token, session.CreatedAt, session.UpdatedAt, session.Status, session.ExpiredAt)
+		`, session.UserID, session.Token, session.CreatedAt, session.UpdatedAt, session.Status, session.ExpiresAt)
 
 		if err != nil {
 			return nil, err

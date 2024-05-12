@@ -17,16 +17,23 @@ type App struct {
 	Router *mux.Router
 }
 
+func jsonMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		next.ServeHTTP(w, r)
+	})
+}
+
 func NewApp(cfg *config.Config) *App {
 	core.InitializeDatabase("user=" + cfg.Database.User + " password=" + cfg.Database.Password + " dbname=" + cfg.Database.Name + " sslmode=disable")
 
 	app := &App{
 		Router: mux.NewRouter(),
 	}
+	app.Router.Use(jsonMiddleware)
 
 	v1 := app.Router.PathPrefix("/v1").Subrouter()
-
-	public := v1.PathPrefix("/public").Subrouter()
+	auth := v1.PathPrefix("/auth").Subrouter()
 
 	userRepo := repository.NewUserRepository(core.GetDB())
 	userController := controller.NewUserController(userRepo)
@@ -36,7 +43,7 @@ func NewApp(cfg *config.Config) *App {
 	sessionRepo := repository.NewSessionRepository(core.GetDB())
 	sessionController := controller.NewSessionController(sessionRepo)
 	sessionHandler := handler.NewSessionHandler(sessionController)
-	sessionHandler.RegisterRoutes(public)
+	sessionHandler.RegisterRoutes(auth)
 
 	workoutRepo := repository.NewWorkoutRepository(core.GetDB())
 	workoutController := controller.NewWorkoutController(workoutRepo)
