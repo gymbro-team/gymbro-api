@@ -16,6 +16,8 @@ type DatabaseConfig struct {
 type Config struct {
 	Database      DatabaseConfig
 	ServerAddress string
+	Token         string
+	JWTSecret     string
 }
 
 func getEnv(key, defaultValue string) string {
@@ -42,5 +44,7 @@ func LoadConfig() *Config {
 	return &Config{
 		Database:      dbConfig,
 		ServerAddress: getEnv("SERVER_ADDRESS", ":3000"),
+		Token:         getEnv("TOKEN", ""),
+		JWTSecret:     getEnv("JWT_SECRET", "diogepepe_30_04_2024"),
 	}
 }

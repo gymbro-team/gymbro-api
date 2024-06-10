@@ -2,13 +2,13 @@ package model
 
 import "time"
 
-type User struct {
+type Exercise struct {
 	ID        uint64    `json:"id"`
-	Type      string    `json:"type"`
-	Username  string    `json:"username"`
+	WorkoutID uint64    `json:"workout_id"`
 	Name      string    `json:"name"`
-	Email     string    `json:"email"`
-	Password  *string   `json:"password"`
+	Icon      string    `json:"icon"`
+	Sets      int       `json:"sets"`
+	Reps      int       `json:"reps"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
