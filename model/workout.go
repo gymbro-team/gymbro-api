@@ -9,6 +9,7 @@ type Workout struct {
 	Name           string     `json:"name"`
 	Icon           string     `json:"icon"`
 	CoverImage     string     `json:"cover_image"`
+	Description    string     `json:"description"`
 	WeekDay        byte       `json:"week_day"`
 	SetsCount      int        `json:"sets_count"`
 	RepsCount      int        `json:"reps_count"`

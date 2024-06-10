@@ -8,6 +8,7 @@ create table gymbro.workouts
   name        text                               not null,
   icon        text                               not null,
   cover_image text                               not null,
+  description text                               not null,
   week_day    bpchar                             not null check ( week_day in ('0','1','2','3','4','5','6') ),
   sets_count      integer                        not null default 0,
   reps_count      integer                        not null default 0,

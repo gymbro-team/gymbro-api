@@ -29,7 +29,7 @@ func AuthecationMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		userID := claims["user_id"].(uint64)
+		userID := claims["user_id"].(float64)
 		r.Header.Set("user_id", fmt.Sprintf("%d", int(userID)))
 
 		next.ServeHTTP(w, r)

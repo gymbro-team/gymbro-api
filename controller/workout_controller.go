@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"gymbro-api/auth"
 	"gymbro-api/model"
 	"gymbro-api/repository"
 	"log"
@@ -23,13 +24,19 @@ func (uc *WorkoutController) CreateWorkoutHandler(w http.ResponseWriter, r *http
 	var workout model.Workout
 
 	err := json.NewDecoder(r.Body).Decode(&workout)
-
 	if err != nil {
 		http.Error(w, "Failed to decode request body, verify your data type and fields", http.StatusBadRequest)
 		return
 	}
 
-	err = uc.workoutRepo.CreateWorkout(&workout)
+	userId, err := auth.GetParsedUserId(r.Header.Get("user_id"))
+
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	err = uc.workoutRepo.CreateWorkout(&workout, userId)
 	if err != nil {
 		log.Printf("Failed to create workout: %v", err)
 		http.Error(w, "Failed to create workout", http.StatusInternalServerError)
@@ -43,7 +50,6 @@ func (uc *WorkoutController) GetWorkoutHandler(w http.ResponseWriter, r *http.Re
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	//cast id to int64
 	id, err := strconv.ParseUint(idStr, 10, 64)
 
 	if err != nil {
@@ -51,7 +57,14 @@ func (uc *WorkoutController) GetWorkoutHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	workout, err := uc.workoutRepo.GetWorkoutByID(id)
+	userId, err := auth.GetParsedUserId(r.Header.Get("user_id"))
+
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	workout, err := uc.workoutRepo.GetWorkoutByID(id, userId)
 
 	if err != nil {
 		if err == repository.ErrWorkoutNotFound {
@@ -67,7 +80,14 @@ func (uc *WorkoutController) GetWorkoutHandler(w http.ResponseWriter, r *http.Re
 }
 
 func (uc *WorkoutController) GetWorkoutsHandler(w http.ResponseWriter, r *http.Request) {
-	workouts, err := uc.workoutRepo.GetWorkouts()
+	userId, err := auth.GetParsedUserId(r.Header.Get("user_id"))
+
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	workouts, err := uc.workoutRepo.GetWorkouts(userId)
 
 	if len(workouts) == 0 {
 		http.Error(w, "No workouts found", http.StatusNotFound)
@@ -86,7 +106,6 @@ func (uc *WorkoutController) UpdateWorkoutHandler(w http.ResponseWriter, r *http
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	//cast id to int64
 	id, err := strconv.ParseUint(idStr, 10, 64)
 
 	if err != nil {
@@ -105,7 +124,14 @@ func (uc *WorkoutController) UpdateWorkoutHandler(w http.ResponseWriter, r *http
 
 	workout.ID = id
 
-	err = uc.workoutRepo.UpdateWorkout(&workout)
+	userId, err := auth.GetParsedUserId(r.Header.Get("user_id"))
+
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	err = uc.workoutRepo.UpdateWorkout(&workout, userId)
 
 	if err != nil {
 		if err == repository.ErrWorkoutNotFound {
@@ -124,7 +150,6 @@ func (uc *WorkoutController) DeleteWorkoutHandler(w http.ResponseWriter, r *http
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	//cast id to int64
 	id, err := strconv.ParseUint(idStr, 10, 64)
 
 	if err != nil {
@@ -132,7 +157,14 @@ func (uc *WorkoutController) DeleteWorkoutHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	err = uc.workoutRepo.DeleteWorkout(id)
+	userId, err := auth.GetParsedUserId(r.Header.Get("user_id"))
+
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	err = uc.workoutRepo.DeleteWorkout(id, userId)
 
 	if err != nil {
 		if err == repository.ErrWorkoutNotFound {

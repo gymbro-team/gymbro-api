@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 	"gymbro-api/config"
+	"strconv"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -42,4 +43,8 @@ func VerifyToken(tokenString string) (jwt.MapClaims, error) {
 	}
 
 	return nil, fmt.Errorf("invalid token")
+}
+
+func GetParsedUserId(userId string) (uint64, error) {
+	return strconv.ParseUint(userId, 10, 64)
 }

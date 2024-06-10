@@ -16,7 +16,7 @@ func NewWorkoutRepository(db *sql.DB) *WorkoutRepository {
 	return &WorkoutRepository{db}
 }
 
-func (wr *WorkoutRepository) CreateWorkout(workout *model.Workout) error {
+func (wr *WorkoutRepository) CreateWorkout(workout *model.Workout, userId uint64) error {
 	_, err := wr.db.Exec(`
 		insert into gymbro.workouts(id
 								   ,athlete_id
@@ -24,6 +24,7 @@ func (wr *WorkoutRepository) CreateWorkout(workout *model.Workout) error {
 								   ,name
 								   ,icon
 								   ,cover_image
+								   ,description
 								   ,week_day
 								   ,sets_count
 								   ,reps_count
@@ -38,26 +39,28 @@ func (wr *WorkoutRepository) CreateWorkout(workout *model.Workout) error {
 								   ,$3::text
 								   ,$4::text
 								   ,$5::text
-								   ,$6::bpchar
+								   ,$6::text
+								   ,$7::bpchar
 								   ,0
 								   ,0
 								   ,0
 								   ,current_timestamp
 								   ,current_timestamp
-								   ,null
-								   ,null)
-	`, workout.AthleteID, workout.PersonalID, workout.Name, workout.Icon, workout.CoverImage, workout.WeekDay)
+								   ,$8::bigint
+								   ,$8::bigint)
+	`, workout.AthleteID, workout.PersonalID, workout.Name, workout.Icon, workout.CoverImage, workout.Description, workout.WeekDay, userId)
 
 	return err
 }
 
-func (wr *WorkoutRepository) GetWorkoutByID(id uint64) (*model.Workout, error) {
+func (wr *WorkoutRepository) GetWorkoutByID(id uint64, userId uint64) (*model.Workout, error) {
 	row := wr.db.QueryRow(`
 		select w.id
 		      ,w.athlete_id
 			  ,w.personal_id
 			  ,w.name
 			  ,w.icon
+			  ,w.description
 			  ,w.cover_image
 			  ,w.week_day
 			  ,w.sets_count
@@ -67,7 +70,10 @@ func (wr *WorkoutRepository) GetWorkoutByID(id uint64) (*model.Workout, error) {
 			  ,w.updated_at
 	     from gymbro.workouts w
 	    where w.id = $1::bigint
-	`, id)
+		  and (w.athlete_id = $2::bigint
+		   or w.personal_id = $2::bigint
+		   or w.created_by = $2::bigint)
+	`, id, userId)
 
 	workout := &model.Workout{}
 
@@ -77,6 +83,7 @@ func (wr *WorkoutRepository) GetWorkoutByID(id uint64) (*model.Workout, error) {
 		&workout.PersonalID,
 		&workout.Name,
 		&workout.Icon,
+		&workout.Description,
 		&workout.CoverImage,
 		&workout.WeekDay,
 		&workout.SetsCount,
@@ -93,7 +100,7 @@ func (wr *WorkoutRepository) GetWorkoutByID(id uint64) (*model.Workout, error) {
 	return workout, err
 }
 
-func (wr *WorkoutRepository) GetWorkouts() ([]model.Workout, error) {
+func (wr *WorkoutRepository) GetWorkouts(userId uint64) ([]model.Workout, error) {
 	rows, err := wr.db.Query(`
 		select w.id
 		      ,w.athlete_id
@@ -101,6 +108,7 @@ func (wr *WorkoutRepository) GetWorkouts() ([]model.Workout, error) {
 			  ,w.name
 			  ,w.icon
 			  ,w.cover_image
+			  ,w.description
 			  ,w.week_day
 			  ,w.sets_count
 			  ,w.reps_count
@@ -108,7 +116,10 @@ func (wr *WorkoutRepository) GetWorkouts() ([]model.Workout, error) {
 			  ,w.created_at
 			  ,w.updated_at
 	     from gymbro.workouts w
-	`)
+		where w.athlete_id = $1::bigint
+		   or w.personal_id = $1::bigint
+		   or w.created_by = $1::bigint
+	`, userId)
 
 	if err != nil {
 		return nil, err
@@ -126,6 +137,7 @@ func (wr *WorkoutRepository) GetWorkouts() ([]model.Workout, error) {
 			&workout.Name,
 			&workout.Icon,
 			&workout.CoverImage,
+			&workout.Description,
 			&workout.WeekDay,
 			&workout.SetsCount,
 			&workout.RepsCount,
@@ -143,7 +155,7 @@ func (wr *WorkoutRepository) GetWorkouts() ([]model.Workout, error) {
 	return workouts, nil
 }
 
-func (wr *WorkoutRepository) UpdateWorkout(workout *model.Workout) error {
+func (wr *WorkoutRepository) UpdateWorkout(workout *model.Workout, userId uint64) error {
 	_, err := wr.db.Exec(`
 		update gymbro.workouts
 		   set athlete_id  = $1::bigint
@@ -151,11 +163,15 @@ func (wr *WorkoutRepository) UpdateWorkout(workout *model.Workout) error {
 			  ,name        = $3::text
 			  ,icon        = $4::text
 			  ,cover_image = $5::text
-			  ,week_day    = $6::bpchar
+			  ,description = $6::text
+			  ,week_day    = $7::bpchar
 			  ,updated_at  = current_timestamp
 			  ,updated_by  = null
-		 where id          = $7::bigint
-	`, workout.AthleteID, workout.PersonalID, workout.Name, workout.Icon, workout.CoverImage, workout.WeekDay, workout.ID)
+		 where id          = $8::bigint
+		   and (athlete_id = $9::bigint
+			or personal_id = $9::bigint
+			or created_by = $9::bigint) 
+	`, workout.AthleteID, workout.PersonalID, workout.Name, workout.Icon, workout.CoverImage, workout.Description, workout.WeekDay, workout.ID, userId)
 
 	if err == sql.ErrNoRows {
 		return ErrWorkoutNotFound
@@ -164,12 +180,15 @@ func (wr *WorkoutRepository) UpdateWorkout(workout *model.Workout) error {
 	return err
 }
 
-func (wr *WorkoutRepository) DeleteWorkout(id uint64) error {
+func (wr *WorkoutRepository) DeleteWorkout(id uint64, userId uint64) error {
 	_, err := wr.db.Exec(`
 		delete
 		  from gymbro.workouts
 		 where id = $1::bigint
-	`, id)
+		   and (athlete_id = $2::bigint
+			or personal_id = $2::bigint
+			or created_by = $2::bigint)
+	`, id, userId)
 
 	if err == sql.ErrNoRows {
 		return ErrWorkoutNotFound
